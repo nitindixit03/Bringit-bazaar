@@ -1,6 +1,6 @@
 {
     "version" : 2,
-    "name" : "Bringit",
+    "name" : "Bringit-bazaar",
     "builds" : [
         {
             "src" : "./index.js",
@@ -13,4 +13,4 @@
             "dest" : "/"
         }
     ]
-}
+}  
