@@ -1,12 +1,25 @@
-import { Router } from 'express'
-import { CashOnDeliveryOrderController, getOrderDetails, paymentController, webhookStripe } from '../controllers/order.controller.js'
-import auth from '../middleware/auth.js'
-const orderRouter = Router()
+import { Router } from 'express';
+import {
+  CashOnDeliveryOrderController,
+  getOrderDetails,
+  paymentController,
+  webhookStripe,
+} from '../controllers/order.controller.js';
+import auth from '../middleware/auth.js';
+import bodyParser from 'body-parser';
 
-orderRouter.post("/cash-on-delivey", auth, CashOnDeliveryOrderController)
-orderRouter.post('/checkout', auth, paymentController)
-orderRouter.post('/webhook', webhookStripe)
-orderRouter.get("/order-list", auth, getOrderDetails)
+const orderRouter = Router();
 
+// normal order routes (use global express.json())
+orderRouter.post('/cash-on-delivey', auth, CashOnDeliveryOrderController);
+orderRouter.post('/checkout', auth, paymentController);
+orderRouter.get('/order-list', auth, getOrderDetails);
 
-export default orderRouter
+// stripe webhook (⚡ must use raw body instead of JSON)
+orderRouter.post(
+  '/webhook',
+  bodyParser.raw({ type: 'application/json' }),
+  webhookStripe
+);
+
+export default orderRouter;
