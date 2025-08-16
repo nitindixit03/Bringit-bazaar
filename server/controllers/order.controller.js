@@ -175,56 +175,66 @@ const getOrderProductItems = async ({
  */
 export async function webhookStripe(req, res) {
   const endpointSecret = process.env.STRIPE_ENDPOINT_WEBHOOK_SECRET_KEY;
-  const sig = req.headers["stripe-signature"];
 
   let event;
-  try {
-    // ✅ Verify the event with raw body
-    event = Stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
-  } catch (err) {
-    console.error("⚠️ Webhook signature verification failed:", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
 
-  console.log("✅ Verified event:", event.type);
-
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object;
-
-      try {
-        const lineItems = await Stripe.checkout.sessions.listLineItems(session.id);
-        const userId = session.metadata.userId;
-
-        const orderProduct = await getOrderProductItems({
-          lineItems,
-          userId,
-          addressId: session.metadata.addressId,
-          paymentId: session.payment_intent,
-          payment_status: session.payment_status,
-        });
-
-        const order = await OrderModel.insertMany(orderProduct);
-
-        console.log("✅ Order created:", order);
-
-        if (order[0]) {
-          await UserModel.findByIdAndUpdate(userId, { shopping_cart: [] });
-          await CartProductModel.deleteMany({ userId });
-          console.log("🛒 Cart cleared for user:", userId);
-        }
-      } catch (err) {
-        console.error("❌ Error handling checkout.session.completed:", err);
-      }
-      break;
+  if (endpointSecret) {
+    // Get the signature sent by Stripe
+    const signature = req.headers['stripe-signature'];
+    try {
+      event = Stripe.webhooks.constructEvent(
+        req.body,
+        signature,
+        endpointSecret
+      );
+    } catch (err) {
+      console.log(`⚠️  Webhook signature verification failed.`, err.message);
+      return res.sendStatus(400);
     }
 
-    default:
-      console.log(`⚠️ Unhandled event type ${event.type}`);
-  }
+    console.log("✅ Verified event:", event.type);
 
-  res.json({ received: true });
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object;
+
+        try {
+          const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+          const userId = session.metadata.userId;
+
+          const orderProduct = await getOrderProductItems({
+            lineItems,
+            userId,
+            addressId: session.metadata.addressId,
+            paymentId: session.payment_intent,
+            payment_status: session.payment_status,
+          });
+
+          const order = await OrderModel.insertMany(orderProduct);
+
+          console.log("✅ Order created:", order);
+
+          if (order[0]) {
+            await UserModel.findByIdAndUpdate(userId, { shopping_cart: [] });
+            await CartProductModel.deleteMany({ userId });
+            console.log("🛒 Cart cleared for user:", userId);
+          }
+        } catch (err) {
+          console.error("❌ Error handling checkout.session.completed:", err);
+        }
+        break;
+      }
+
+      default:
+        console.log(`⚠️ Unhandled event type ${event.type}`);
+    }
+
+    return res.json({ received: true });
+  } else {
+    return res.status(400).json({ error: "Endpoint secret not set" });
+  }
 }
+
 
 /**
  * Get Order Details (for user)
