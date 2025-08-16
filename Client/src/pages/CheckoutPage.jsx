@@ -55,15 +55,13 @@ const CheckoutPage = () => {
             if (loadingToast) toast.dismiss(loadingToast)
         }
     }
-
     const handleOnlinePayment = async () => {
         let loadingToast = null;
         try {
-            loadingToast = toast.loading("Loading...")
+            loadingToast = toast.loading("Loading...");
 
-            const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY
-
-            const stripePromise = await loadStripe(stripePublicKey)
+            const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+            const stripePromise = await loadStripe(stripePublicKey);
 
             const response = await Axios({
                 ...SummaryApi.payment_url,
@@ -72,19 +70,18 @@ const CheckoutPage = () => {
                     totalAmt: totalPrice,
                     addressID: addressList[selectAddress]?._id,
                     subTotalAmt: totalPrice,
-                }
-            })
+                },
+            });
 
-            const { data: responseData } = response
+            const { id: sessionId } = response.data;
 
-            stripePromise.redirectToCheckout({ sessionId: responseData.id })
+            console.log("hello",sessionId)
 
-            if (fetchCartItem) {
-                fetchCartItem()
-            }
-            if (fetchOrder) {
-                fetchOrder()
-            }
+            // ✅ Save session ID in localStorage
+            localStorage.setItem("stripeSessionId", sessionId);
+
+            // Redirect to Stripe checkout
+            stripePromise.redirectToCheckout({ sessionId });
 
         } catch (error) {
             if (error.response?.data?.message) {
@@ -95,7 +92,8 @@ const CheckoutPage = () => {
         } finally {
             if (loadingToast) toast.dismiss(loadingToast);
         }
-    }
+    };
+
 
     return (
         <section className='bg-blue-50'>

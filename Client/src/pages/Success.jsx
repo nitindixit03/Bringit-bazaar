@@ -1,7 +1,38 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Axios from "../utils/axios";
+import SummaryApi from "../common/SummaryApi";
 
 const Success = () => {
+  const navigate = useNavigate();
+useEffect(() => {
+  async function handleSuccess() {
+    try {
+      const session_id = localStorage.getItem("stripeSessionId");
+      if (!session_id) return;
+
+      const response = await Axios({
+        ...SummaryApi.success,
+        data: {
+          session_id : session_id
+        }
+      });
+
+      if (response.data.success) {
+        console.log("Order created successfully", response.data.data);
+        localStorage.removeItem("stripeSessionId"); // ✅ clean up
+        window.location.reload()
+      } else {
+        console.error("Failed to create order", response.data.message);
+      }
+    } catch (error) {
+      console.error("Error creating order", error);
+    }
+  }
+
+  handleSuccess();
+}, [navigate]);
+
 
   return (
     <div className="min-h-[calc(100vh-10rem)] bg-gradient-to-br from-green-50 via-white to-green-50 px-4 py-8 flex items-center justify-center">

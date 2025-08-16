@@ -1,10 +1,19 @@
 import OrderModel from "../models/order.model.js";
 import UserModel from "../models/user.model.js";
 import CartProductModel from "../models/cartproduct.model.js";
+import ProductModel from "../models/product.model.js"; // optional, for fetching product details
 import mongoose from "mongoose";
 import Stripe from "../config/stripe.js";
 import dotenv from "dotenv";
 dotenv.config();
+
+/**
+ * Utility: Calculate price after discount
+ */
+export const PriceWithDiscount = (price, dis = 0) => {
+  const discountAmount = Math.ceil((Number(price) * Number(dis)) / 100);
+  return Number(price) - discountAmount;
+};
 
 /**
  * Cash on Delivery Order
@@ -23,28 +32,25 @@ export async function CashOnDeliveryOrderController(req, res) {
     }
 
     const payload = list_items.map((el) => ({
-      userId: userId,
+      userId,
       orderId: `ORD-${new mongoose.Types.ObjectId()}`,
-      productId: el.productId._id,
-      product_details: {
-        name: el.productId.name,
-        image: el.productId.image,
-      },
+      productId: new mongoose.Types.ObjectId(el.productId._id),
+      product_details: { name: el.productId.name, image: el.productId.image },
       paymentId: "",
       payment_status: "CASH ON DELIVERY",
       delivery_address: addressID,
-      subTotalAmt: subTotalAmt,
-      totalAmt: totalAmt,
+      subTotalAmt,
+      totalAmt,
     }));
 
     const generateOrder = await OrderModel.insertMany(payload);
 
-    // remove from cart
+    // Clear cart
     await CartProductModel.deleteMany({ userId });
     await UserModel.updateOne({ _id: userId }, { shopping_cart: [] });
 
     return res.json({
-      message: "Order Successfully",
+      message: "Order placed successfully",
       success: true,
       error: false,
       data: generateOrder,
@@ -59,23 +65,12 @@ export async function CashOnDeliveryOrderController(req, res) {
 }
 
 /**
- * Utility: Calculate discounted price
- */
-export const PriceWithDiscount = (price, dis = 1) => {
-  const discountAmount = Math.ceil((Number(price) * Number(dis)) / 100);
-  const actualPrice = Number(price) - Number(discountAmount);
-
-  return actualPrice;
-};
-
-/**
- * Online Payment Controller
+ * Online Payment Controller (Create Stripe Session)
  */
 export async function paymentController(req, res) {
   try {
     const userId = req.userId;
     const { list_items, totalAmt, addressID, subTotalAmt } = req.body;
-
     const user = await UserModel.findById(userId);
 
     if (totalAmt < 45) {
@@ -86,43 +81,41 @@ export async function paymentController(req, res) {
       });
     }
 
+    // Prepare Stripe line items
     const line_items = list_items.map((item) => ({
       price_data: {
         currency: "inr",
         product_data: {
           name: item.productId.name,
-          images: item.productId.image,
-          metadata: {
-            productId: item.productId._id,
-          },
         },
-        unit_amount:
-          PriceWithDiscount(item.productId.price, item.productId.discount) * 100,
+        unit_amount: PriceWithDiscount(item.productId.price, item.productId.discount) * 100,
       },
-      adjustable_quantity: {
-        enabled: true,
-        minimum: 1,
-      },
+      adjustable_quantity: { enabled: true, minimum: 1 },
       quantity: item.quantity,
     }));
 
-    const params = {
-      submit_type: "pay",
-      mode: "payment",
-      payment_method_types: ["card"],
-      customer_email: user.email,
-      metadata: {
-        userId: userId,
-        addressId: addressID,
-      },
-      line_items: line_items,
-      success_url: `${process.env.FRONTEND_URL}/success`,
-      cancel_url: `${process.env.FRONTEND_URL}/cancel`,
+    // Minimal metadata
+    const metadata = {
+      userId,
+      addressID,
+      list_items: JSON.stringify(
+        list_items.map((i) => ({ productId: i.productId._id.toString(), quantity: i.quantity }))
+      ),
+      totalAmt,
+      subTotalAmt,
     };
 
-    const session = await Stripe.checkout.sessions.create(params);
+    const session = await Stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      customer_email: user.email,
+      line_items,
+      metadata,
+      success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL}/checkout`,
+    });
 
-    return res.status(200).json(session);
+    return res.json({ id: session.id });
   } catch (error) {
     return res.status(500).json({
       message: error.message || error,
@@ -133,113 +126,58 @@ export async function paymentController(req, res) {
 }
 
 /**
- * Helper: Get Order Product Items from Stripe LineItems
+ * Stripe Success Handler
  */
-const getOrderProductItems = async ({
-  lineItems,
-  userId,
-  addressId,
-  paymentId,
-  payment_status,
-}) => {
-  const productList = [];
+export async function checkoutSuccessHandler(req, res) {
+  try {
+    const { session_id } = req.body;
+    if (!session_id)
+      return res.status(400).json({ success: false, message: "Session ID missing" });
 
-  if (lineItems?.data?.length) {
-    for (const item of lineItems.data) {
-      const product = await Stripe.products.retrieve(item.price.product);
+    const session = await Stripe.checkout.sessions.retrieve(session_id);
+    const userId = session.metadata.userId;
+    const addressId = session.metadata.addressID;
+    const list_items = JSON.parse(session.metadata.list_items);
+    const totalAmt = session.metadata.totalAmt;
+    const subTotalAmt = session.metadata.subTotalAmt;
 
-      const payload = {
-        userId,
-        orderId: `ORD-${new mongoose.Types.ObjectId()}`,
-        productId: product.metadata.productId,
-        product_details: {
-          name: product.name,
-          image: product.images,
-        },
-        paymentId,
-        payment_status,
-        delivery_address: addressId,
-        subTotalAmt: Number(item.amount_total / 100),
-        totalAmt: Number(item.amount_total / 100),
-      };
-
-      productList.push(payload);
-    }
-  }
-
-  return productList;
-};
-
-/**
- * Stripe Webhook (Secure Verification)
- */
-export async function webhookStripe(req, res) {
-
-  console.log(req.body)
-  const endpointSecret = process.env.STRIPE_ENDPOINT_WEBHOOK_SECRET_KEY;
-
-  let event;
-
-  if (endpointSecret) {
-    // Get the signature sent by Stripe
-    const signature = req.headers['stripe-signature'];
-    try {
-      event = Stripe.webhooks.constructEvent(
-        req.body,
-        signature,
-        endpointSecret
-      );
-    } catch (err) {
-      console.log(`⚠️  Webhook signature verification failed.`, err.message);
-      return res.sendStatus(400);
+    // Fetch product details from DB
+    const productDetailsMap = {};
+    for (const item of list_items) {
+      const product = await ProductModel.findById(item.productId);
+      productDetailsMap[item.productId] = product
+        ? { name: product.name, image: product.image }
+        : { name: "Product", image: [] };
     }
 
-    console.log("✅ Verified event:", event.type);
+    // Prepare orders with correct ObjectIds
+    const orderProduct = list_items.map((item) => ({
+      userId,
+      orderId: `ORD-${new mongoose.Types.ObjectId()}`,
+      productId: new mongoose.Types.ObjectId(item.productId),
+      product_details: productDetailsMap[item.productId],
+      paymentId: session.payment_intent,
+      payment_status: session.payment_status,
+      delivery_address: addressId,
+      subTotalAmt,
+      totalAmt,
+    }));
 
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object;
+    const order = await OrderModel.insertMany(orderProduct);
 
-        try {
-          const lineItems = await Stripe.checkout.sessions.listLineItems(session.id);
-          const userId = session.metadata.userId;
+    // Clear cart
+    await UserModel.findByIdAndUpdate(userId, { shopping_cart: [] });
+    await CartProductModel.deleteMany({ userId });
 
-          const orderProduct = await getOrderProductItems({
-            lineItems,
-            userId,
-            addressId: session.metadata.addressId,
-            paymentId: session.payment_intent,
-            payment_status: session.payment_status,
-          });
-
-          const order = await OrderModel.insertMany(orderProduct);
-
-          console.log("✅ Order created:", order);
-
-          if (order[0]) {
-            await UserModel.findByIdAndUpdate(userId, { shopping_cart: [] });
-            await CartProductModel.deleteMany({ userId });
-            console.log("🛒 Cart cleared for user:", userId);
-          }
-        } catch (err) {
-          console.error("❌ Error handling checkout.session.completed:", err);
-        }
-        break;
-      }
-
-      default:
-        console.log(`⚠️ Unhandled event type ${event.type}`);
-    }
-
-    return res.json({ received: true });
-  } else {
-    return res.status(400).json({ error: "Endpoint secret not set" });
+    return res.json({ success: true, data: order });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Failed to create order" });
   }
 }
 
-
 /**
- * Get Order Details (for user)
+ * Get Order Details
  */
 export async function getOrderDetails(req, res) {
   try {
@@ -250,7 +188,7 @@ export async function getOrderDetails(req, res) {
       .populate("delivery_address");
 
     return res.json({
-      message: "order list",
+      message: "Order list",
       data: orderlist,
       error: false,
       success: true,

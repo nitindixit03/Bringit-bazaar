@@ -152,6 +152,14 @@ const SummaryApi = {
     getOrderItems : {
         url : "/api/order/order-list",
         method : 'get'
+    },
+    webhook : {
+        url : "/api/order/webhook",
+        method: 'post'
+    },
+    success : {
+        url : "/api/order/checkout/success",
+        method : 'post'
     }
 }
 
