@@ -174,6 +174,8 @@ const getOrderProductItems = async ({
  * Stripe Webhook (Secure Verification)
  */
 export async function webhookStripe(req, res) {
+
+  console.log(req.body)
   const endpointSecret = process.env.STRIPE_ENDPOINT_WEBHOOK_SECRET_KEY;
 
   let event;
@@ -199,7 +201,7 @@ export async function webhookStripe(req, res) {
         const session = event.data.object;
 
         try {
-          const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+          const lineItems = await Stripe.checkout.sessions.listLineItems(session.id);
           const userId = session.metadata.userId;
 
           const orderProduct = await getOrderProductItems({
