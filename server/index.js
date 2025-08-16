@@ -16,36 +16,47 @@ import addressRouter from './routes/address.route.js';
 import orderRouter from './routes/order.route.js';
 
 const app = express();
+
+// ✅ Allow multiple frontend URLs from env
+const allowedOrigins = process.env.FRONTEND_URLS
+  ? process.env.FRONTEND_URLS.split(",")
+  : [];
+
 app.use(cors({
-    credentials : true, // if using cookies/auth headers
-    origin: process.env.FRONTEND_URL, // allow frontend to connect
-}))
+  credentials: true, 
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS: " + origin));
+    }
+  }
+}));
+
 app.use(express.json())
 app.use(cookieParser())
-app.use(morgan());
+app.use(morgan('dev'));
 app.use(helmet({
-    crossOriginResourcePolicy : false,
+  crossOriginResourcePolicy: false,
 }))
 
-const PORT = 8000 || process.env.PORT
+const PORT = process.env.PORT || 8000;
 
 app.get('/', (req, res) => {
-    res.json({ message: "Server is running at " + PORT})
+  res.json({ message: "Server is running at " + PORT })
 })
 
 app.use('/api/user', userRouter)
-app.use('/api/category',categoryRouter)
-app.use('/api/file',uploadRouter)
-app.use('/api/subcategory',subCategoryRouter)
-app.use('/api/product',productRouter)
-app.use('/api/cart',cartRouter)
-app.use('/api/address',addressRouter)
-app.use('/api/order',orderRouter)
+app.use('/api/category', categoryRouter)
+app.use('/api/file', uploadRouter)
+app.use('/api/subcategory', subCategoryRouter)
+app.use('/api/product', productRouter)
+app.use('/api/cart', cartRouter)
+app.use('/api/address', addressRouter)
+app.use('/api/order', orderRouter)
 
-db().then(()=>{
-    app.listen(PORT, ()=> {
-        console.log('Server is running',PORT)
-    })
+db().then(() => {
+  app.listen(PORT, () => {
+    console.log('Server is running on port', PORT)
+  })
 })
-
-
