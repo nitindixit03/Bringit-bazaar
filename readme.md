@@ -13,12 +13,12 @@
 
 Bringit Bazaar is a full-stack e-commerce web application built with **React (Vite)** on the frontend and **Node.js/Express + MongoDB** on the backend. It provides a seamless shopping experience with authentication, cart management, and multiple payment options.  
 
-![Banner](./Bringit-bazzar-banner1.png)  
+![Bringit Bazaar Banner](./Client/src/assets/Bringit-bazzar-banner1.png)
 
 ## 🚀 Live Demo  
 Frontend + Backend hosted on **Render**.  
 
-🔗 [Visit Bringit Bazaar](https://bringit-bazaar.onrender.com)  
+🔗 [Visit Bringit Bazaar](https://bringit-bazaar-1.onrender.com)  
 
 ---
 
