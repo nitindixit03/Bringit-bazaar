@@ -1,13 +1,6 @@
 # Bringit Bazaar 🛒  
 
-![React](https://img.shields.io/badge/Frontend-React-blue?logo=react)  
-![Vite](https://img.shields.io/badge/Build-Vite-purple?logo=vite)  
-![TailwindCSS](https://img.shields.io/badge/Style-TailwindCSS-38B2AC?logo=tailwindcss)  
-![Node.js](https://img.shields.io/badge/Backend-Node.js-green?logo=node.js)  
-![Express](https://img.shields.io/badge/Framework-Express-lightgrey?logo=express)  
-![MongoDB](https://img.shields.io/badge/Database-MongoDB-brightgreen?logo=mongodb)  
-![Stripe](https://img.shields.io/badge/Payments-Stripe-blueviolet?logo=stripe)  
-![Render](https://img.shields.io/badge/Hosting-Render-46E3B7?logo=render)  
+![React](https://img.shields.io/badge/Frontend-React-blue?logo=react) ![Vite](https://img.shields.io/badge/Build-Vite-purple?logo=vite) ![TailwindCSS](https://img.shields.io/badge/Style-TailwindCSS-38B2AC?logo=tailwindcss) ![Node.js](https://img.shields.io/badge/Backend-Node.js-green?logo=node.js) ![Express](https://img.shields.io/badge/Framework-Express-lightgrey?logo=express) ![MongoDB](https://img.shields.io/badge/Database-MongoDB-brightgreen?logo=mongodb) ![Stripe](https://img.shields.io/badge/Payments-Stripe-blueviolet?logo=stripe) ![Render](https://img.shields.io/badge/Hosting-Render-46E3B7?logo=render)  
 
 ---
 
@@ -57,3 +50,14 @@ Frontend + Backend hosted on **Render**.
    ```bash
    git clone https://github.com/nitindixit03/Bringit-bazaar.git
    cd Bringit-bazaar
+
+cd Client
+npm install
+cd ../Server
+npm install
+
+cd Server
+npm run dev
+
+cd Client
+npm run dev
