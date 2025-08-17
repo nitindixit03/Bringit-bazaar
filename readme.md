@@ -24,10 +24,10 @@ Frontend + Backend hosted on **Render**.
 ---
 
 ## ✨ Features  
-
+🛠    **Admin Panel** → Added functionality to create and manage products with category & subcategory, track inventory, and     control product visibility for users.
 - 🔍 **Search Products** – Easily search and explore products.  
 - 👤 **Authentication** – Login, Signup, and Logout functionality.  
-- 🖼 **Profile Management** – Upload and update your profile image.  
+- 🖼  **Profile Management** – Upload and update your profile image.  
 - 🛒 **Cart System** – Add products to cart, increase/decrease quantity.  
 - 💳 **Order Placement** – Checkout with **Cash on Delivery** or **Online Payment (Stripe)**.  
 - 📦 **Order Tracking** – View your past and current orders on the **Orders Page**.  
