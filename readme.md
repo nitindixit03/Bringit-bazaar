@@ -1,14 +1,22 @@
 # Bringit Bazaar 🛒  
 
-![React](https://img.shields.io/badge/Frontend-React-blue?logo=react) ![Vite](https://img.shields.io/badge/Build-Vite-purple?logo=vite) ![TailwindCSS](https://img.shields.io/badge/Style-TailwindCSS-38B2AC?logo=tailwindcss) ![Node.js](https://img.shields.io/badge/Backend-Node.js-green?logo=node.js) ![Express](https://img.shields.io/badge/Framework-Express-lightgrey?logo=express) ![MongoDB](https://img.shields.io/badge/Database-MongoDB-brightgreen?logo=mongodb) ![Stripe](https://img.shields.io/badge/Payments-Stripe-blueviolet?logo=stripe) ![Render](https://img.shields.io/badge/Hosting-Render-46E3B7?logo=render)  
+![React](https://img.shields.io/badge/Frontend-React-blue?logo=react) 
+![Vite](https://img.shields.io/badge/Build-Vite-purple?logo=vite) 
+![TailwindCSS](https://img.shields.io/badge/Style-TailwindCSS-38B2AC?logo=tailwindcss) 
+![Node.js](https://img.shields.io/badge/Backend-Node.js-green?logo=node.js) 
+![Express](https://img.shields.io/badge/Framework-Express-lightgrey?logo=express) 
+![MongoDB](https://img.shields.io/badge/Database-MongoDB-brightgreen?logo=mongodb) 
+![Stripe](https://img.shields.io/badge/Payments-Stripe-blueviolet?logo=stripe) 
+![Render](https://img.shields.io/badge/Hosting-Render-46E3B7?logo=render)  
 
 ---
 
 Bringit Bazaar is a full-stack e-commerce web application built with **React (Vite)** on the frontend and **Node.js/Express + MongoDB** on the backend. It provides a seamless shopping experience with authentication, cart management, and multiple payment options.  
 
-![Bringit Bazaar Banner](./Client/src/assets/Bringit-bazzar-banner1.png)
+---
 
 ## 🚀 Live Demo  
+
 Frontend + Backend hosted on **Render**.  
 
 🔗 [Visit Bringit Bazaar](https://bringit-bazaar-1.onrender.com)  
@@ -51,13 +59,20 @@ Frontend + Backend hosted on **Render**.
    git clone https://github.com/nitindixit03/Bringit-bazaar.git
    cd Bringit-bazaar
 
+# Install Client
 cd Client
 npm install
+
+# Install Server
 cd ../Server
 npm install
 
+# Start backend
 cd Server
 npm run dev
 
-cd Client
+# Start frontend
+cd ../Client
 npm run dev
+
+<p align="center"> <img src="./Client/src/assets/Bringit-bazzar-banner1.png" alt="Bringit Bazaar Banner" width="700"/> </p>
